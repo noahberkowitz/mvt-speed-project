@@ -1,0 +1,1082 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MVT Speed Trap Simulator</title>
+  <style>
+    :root {
+      --bg: #f4f7fb;
+      --card: #ffffff;
+      --ink: #172033;
+      --muted: #64748b;
+      --blue: #2563eb;
+      --blue-dark: #1d4ed8;
+      --green: #16a34a;
+      --red: #dc2626;
+      --yellow: #facc15;
+      --road: #2f3645;
+      --road-dark: #111827;
+      --border: #e2e8f0;
+      --shadow: 0 18px 45px rgba(15, 23, 42, 0.10);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at top left, rgba(37, 99, 235, 0.10), transparent 34%),
+        radial-gradient(circle at top right, rgba(22, 163, 74, 0.08), transparent 30%),
+        var(--bg);
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      padding: 28px;
+    }
+
+    .container { width: min(1180px, 100%); margin: 0 auto; }
+
+    .hero { text-align: center; padding: 26px 12px 18px; }
+
+    .eyebrow {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 7px 12px; margin-bottom: 14px;
+      border: 1px solid rgba(37, 99, 235, 0.16);
+      border-radius: 999px; background: rgba(255, 255, 255, 0.72);
+      color: var(--blue-dark); font-size: 0.9rem; font-weight: 800; letter-spacing: 0.02em;
+    }
+
+    .hero h1 {
+      font-size: clamp(2.1rem, 5vw, 4.6rem);
+      line-height: 1; letter-spacing: -0.06em; margin-bottom: 14px;
+    }
+
+    .hero p {
+      max-width: 760px; margin: 0 auto; color: var(--muted);
+      font-size: clamp(1rem, 2vw, 1.22rem); line-height: 1.55;
+    }
+
+    .tabs {
+      display: flex; justify-content: center; gap: 12px;
+      margin: 8px 0 26px; flex-wrap: wrap;
+    }
+
+    .tab-btn {
+      min-width: 190px; background: rgba(255, 255, 255, 0.85);
+      color: #334155; border: 1px solid var(--border);
+      box-shadow: 0 10px 25px rgba(15, 23, 42, 0.06);
+    }
+
+    .tab-btn.active {
+      background: linear-gradient(135deg, var(--blue), #60a5fa);
+      color: white; border-color: transparent;
+      box-shadow: 0 16px 32px rgba(37, 99, 235, 0.24);
+    }
+
+    .tab-page { display: none; }
+    .tab-page.active { display: block; }
+
+    .grid { display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 22px; align-items: start; }
+
+    .panel, .lesson-card {
+      background: rgba(255, 255, 255, 0.92);
+      border: 1px solid rgba(226, 232, 240, 0.92);
+      border-radius: 26px; box-shadow: var(--shadow);
+      padding: 24px; backdrop-filter: blur(8px);
+    }
+
+    .panel + .panel { margin-top: 22px; }
+
+    .panel-title { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-bottom: 17px; }
+    .panel-title h2 { font-size: 1.28rem; letter-spacing: -0.025em; }
+
+    .pill {
+      display: inline-flex; align-items: center; min-height: 30px;
+      padding: 6px 11px; border-radius: 999px; background: #eff6ff;
+      color: var(--blue-dark); font-size: 0.78rem; font-weight: 900; white-space: nowrap;
+    }
+
+    .setup { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+
+    .field label, .speed-box label {
+      display: block; color: #334155; font-weight: 900; font-size: 0.9rem; margin-bottom: 8px;
+    }
+
+    .field input {
+      width: 100%; padding: 13px; border: 1px solid #cbd5e1;
+      border-radius: 14px; color: var(--ink); background: #fff; font-size: 1rem; outline: none;
+      transition: border-color 0.16s, box-shadow 0.16s;
+    }
+
+    .field input:focus { border-color: rgba(37, 99, 235, 0.75); box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.10); }
+    .field input:disabled { color: #64748b; background: #f8fafc; cursor: not-allowed; }
+
+    .button-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
+
+    button {
+      border: 0; border-radius: 16px; padding: 14px 16px;
+      font-weight: 950; font-size: 1rem; cursor: pointer;
+      transition: transform 0.16s, opacity 0.16s, box-shadow 0.16s;
+    }
+
+    button:hover:not(:disabled) { transform: translateY(-2px); }
+    button:disabled { opacity: 0.55; cursor: not-allowed; }
+
+    .start-btn { color: white; background: linear-gradient(135deg, var(--blue), #60a5fa); box-shadow: 0 14px 26px rgba(37, 99, 235, 0.23); }
+    .reset-btn { color: #0f172a; background: #e2e8f0; }
+
+    .road-panel { overflow: hidden; }
+    .road-note { color: var(--muted); line-height: 1.5; margin-top: -8px; margin-bottom: 18px; }
+    .road-wrap { position: relative; padding: 34px 0 18px; }
+
+    .road {
+      position: relative; height: 176px; border: 6px solid var(--road-dark);
+      border-radius: 28px; overflow: hidden;
+      background: linear-gradient(180deg, rgba(255,255,255,0.05), transparent 30%), var(--road);
+    }
+
+    .road::before, .road::after { content: ""; position: absolute; left: 0; width: 100%; height: 18px; background: rgba(255, 255, 255, 0.08); }
+    .road::before { top: 18px; } .road::after { bottom: 18px; }
+
+    .lane-line {
+      position: absolute; top: 50%; left: 0; width: 100%; height: 6px; transform: translateY(-50%);
+      background: repeating-linear-gradient(to right, var(--yellow) 0, var(--yellow) 42px, transparent 42px, transparent 88px);
+      opacity: 0.96;
+    }
+
+    .camera {
+      position: absolute; top: 14px; width: 8px; height: 148px; border-radius: 999px;
+      background: linear-gradient(180deg, #fb7185, #ef4444); z-index: 5;
+      box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.14), 0 0 22px rgba(239, 68, 68, 0.28);
+    }
+
+    .camera-a { left: 15%; } .camera-b { left: 85%; }
+
+    .camera-label {
+      position: absolute; top: -38px; left: 50%; transform: translateX(-50%);
+      padding: 6px 10px; border-radius: 999px; background: #fff; color: #be123c;
+      border: 1px solid #fecdd3; font-size: 0.82rem; font-weight: 950; white-space: nowrap;
+      box-shadow: 0 8px 16px rgba(15, 23, 42, 0.08);
+    }
+
+    .measured-zone {
+      position: absolute; left: 15%; width: 70%; top: 0; height: 100%;
+      background: linear-gradient(90deg, rgba(37, 99, 235, 0.09), rgba(37, 99, 235, 0.02), rgba(37, 99, 235, 0.09));
+      z-index: 1; pointer-events: none;
+    }
+
+    .zone-label {
+      position: absolute; top: 10px; left: 50%; transform: translateX(-50%); z-index: 2;
+      color: rgba(255, 255, 255, 0.76); font-size: 0.82rem; font-weight: 900;
+      letter-spacing: 0.08em; text-transform: uppercase;
+    }
+
+    .car {
+      position: absolute; left: 5%; top: 84px; width: 74px; height: 34px;
+      transform: translate(-50%, -50%); z-index: 7;
+      filter: drop-shadow(0 14px 12px rgba(0,0,0,0.32)); transition: left 0.04s linear;
+    }
+
+    .car-body { position: absolute; inset: 8px 0 0 0; border-radius: 22px 30px 14px 14px; background: linear-gradient(135deg, #2563eb, #38bdf8); border: 2px solid rgba(255,255,255,0.35); }
+    .car-cabin { position: absolute; left: 25px; top: 0; width: 34px; height: 23px; border-radius: 16px 20px 4px 4px; background: linear-gradient(135deg, #93c5fd, #e0f2fe); border: 2px solid rgba(255,255,255,0.7); }
+    .car-nose { position: absolute; right: -8px; top: 16px; width: 15px; height: 14px; border-radius: 50%; background: #60a5fa; }
+    .wheel { position: absolute; bottom: -4px; width: 16px; height: 16px; border-radius: 50%; background: #0f172a; border: 3px solid #cbd5e1; }
+    .wheel-left { left: 13px; } .wheel-right { right: 11px; }
+
+    .speed-box { margin-top: 18px; padding: 18px; border-radius: 22px; background: linear-gradient(135deg, #f8fafc, #eef6ff); border: 1px solid #dbeafe; }
+    .speed-top { display: flex; align-items: end; justify-content: space-between; gap: 14px; margin-bottom: 12px; }
+    .speed-readout { font-size: clamp(2rem, 5vw, 3rem); font-weight: 1000; letter-spacing: -0.06em; color: var(--blue-dark); line-height: 1; }
+    .speed-readout span:last-child { font-size: 0.9rem; letter-spacing: 0; color: var(--muted); }
+    input[type="range"] { width: 100%; accent-color: var(--blue); cursor: pointer; }
+
+    .dash { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 18px; }
+    .stat { min-height: 96px; padding: 15px; border-radius: 18px; border: 1px solid var(--border); background: #f8fafc; }
+    .stat h3 { color: var(--muted); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 9px; }
+    .stat p { font-size: 1.45rem; font-weight: 1000; letter-spacing: -0.04em; }
+
+    .status-pill { display: inline-flex; align-items: center; padding: 9px 12px; border-radius: 999px; background: #f1f5f9; color: #334155; font-size: 0.95rem; font-weight: 950; letter-spacing: -0.02em; }
+    .status-pill.measuring { background: #dbeafe; color: #1d4ed8; }
+    .status-pill.finished { background: #dcfce7; color: #166534; }
+    .status-pill.past { background: #fef3c7; color: #92400e; }
+
+    .dual-graphs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 22px;
+      margin-top: 22px;
+    }
+
+    .graph-card canvas { width: 100%; height: 310px; display: block; border-radius: 18px; border: 1px solid var(--border); background: #ffffff; }
+    .graph-help, .mini-note { color: var(--muted); line-height: 1.55; margin-top: 11px; font-size: 0.95rem; }
+
+    .result { display: none; margin-top: 18px; padding: 18px; border-radius: 20px; line-height: 1.55; border: 1px solid transparent; }
+    .result h3 { margin-bottom: 7px; letter-spacing: -0.02em; }
+    .result.speeding { display: block; background: #fef2f2; color: #7f1d1d; border-color: #fecaca; }
+    .result.legal { display: block; background: #ecfdf5; color: #064e3b; border-color: #bbf7d0; }
+
+    .demo-list { display: grid; gap: 10px; list-style: none; color: #334155; line-height: 1.45; }
+    .demo-list li { display: flex; gap: 10px; padding: 11px 12px; border-radius: 16px; background: #f8fafc; border: 1px solid var(--border); }
+    .demo-list strong { color: var(--blue-dark); }
+
+    .calc-section { margin-top: 22px; }
+    .calc-body { display: grid; grid-template-columns: 0.9fr 1.1fr; gap: 18px; align-items: stretch; }
+    .formula-stack { display: grid; gap: 12px; }
+    .formula, .lesson-formula { padding: 16px; border-radius: 18px; background: #f8fafc; border: 1px solid var(--border); border-left: 6px solid var(--blue); font-family: Georgia, "Times New Roman", serif; font-size: 1.05rem; line-height: 1.55; }
+    .explain { padding: 18px; border-radius: 20px; background: linear-gradient(135deg, #eef6ff, #f8fafc); border: 1px solid #dbeafe; line-height: 1.65; color: #334155; }
+    .explain strong { color: #0f172a; }
+
+    .lesson-hero { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 20px; align-items: stretch; }
+    .lesson-card h2, .lesson-card h3 { letter-spacing: -0.035em; margin-bottom: 12px; }
+    .lesson-card p { color: #334155; line-height: 1.65; margin-bottom: 12px; }
+    .lesson-steps { display: grid; gap: 16px; margin-top: 20px; }
+    .lesson-step { display: grid; grid-template-columns: 54px 1fr; gap: 16px; padding: 20px; border-radius: 24px; background: #ffffff; border: 1px solid var(--border); box-shadow: 0 14px 30px rgba(15, 23, 42, 0.07); }
+    .step-number { width: 54px; height: 54px; border-radius: 18px; display: grid; place-items: center; background: #eff6ff; color: var(--blue-dark); font-size: 1.25rem; font-weight: 1000; }
+    .lesson-step h3 { margin-bottom: 7px; font-size: 1.16rem; }
+    .lesson-step p { color: #475569; line-height: 1.6; margin-bottom: 10px; }
+    .last-run-box { background: linear-gradient(135deg, #eef6ff, #f8fafc); border: 1px solid #dbeafe; border-radius: 26px; box-shadow: var(--shadow); padding: 24px; height: 100%; }
+    .last-run-box h2 { letter-spacing: -0.035em; margin-bottom: 12px; }
+    .last-run-box p { color: #334155; line-height: 1.6; }
+    .last-run-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 14px 0; }
+    .last-run-stat { padding: 13px; border-radius: 16px; background: white; border: 1px solid var(--border); }
+    .last-run-stat span { display: block; color: var(--muted); font-size: 0.74rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+    .last-run-stat strong { font-size: 1.25rem; letter-spacing: -0.04em; }
+    .evidence-boxes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 16px; }
+    .evidence-box { padding: 18px; border-radius: 22px; border: 1px solid var(--border); background: #f8fafc; }
+    .evidence-box h3 { margin-bottom: 8px; }
+    .evidence-box.camera-evidence { background: #fff7ed; color: #9a3412; }
+    .evidence-box.calc-evidence { background: #eff6ff; color: #1e3a8a; }
+    .mini-quiz { margin-top: 18px; display: grid; gap: 10px; }
+    .quiz-option { text-align: left; background: #f8fafc; border: 1px solid var(--border); color: #334155; box-shadow: none; }
+    .quiz-option.correct { background: #dcfce7; color: #166534; border-color: #bbf7d0; }
+    .quiz-option.wrong { background: #fee2e2; color: #991b1b; border-color: #fecaca; }
+    .quiz-feedback { display: none; padding: 14px; border-radius: 16px; background: #f8fafc; border: 1px solid var(--border); color: #334155; line-height: 1.55; }
+    .quiz-feedback.show { display: block; }
+
+    @media (max-width: 1100px) {
+      .dual-graphs { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 960px) {
+      body { padding: 18px; }
+      .grid, .calc-body, .lesson-hero, .evidence-boxes { grid-template-columns: 1fr; }
+      .dash { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    @media (max-width: 640px) {
+      .panel, .lesson-card, .last-run-box { padding: 18px; border-radius: 20px; }
+      .setup, .button-row, .dash, .last-run-grid { grid-template-columns: 1fr; }
+      .road { height: 150px; border-radius: 22px; }
+      .camera { height: 124px; }
+      .car { top: 72px; width: 62px; transform: translate(-50%, -50%) scale(0.9); }
+      .camera-label { font-size: 0.72rem; top: -34px; }
+      .lesson-step { grid-template-columns: 1fr; }
+      .tab-btn { min-width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <section class="hero">
+      <div class="eyebrow">AP Calculus • Mean Value Theorem</div>
+      <h1>MVT Speed Trap Simulator</h1>
+      <p>Can two cameras prove that a car was speeding even if neither camera catches it speeding?</p>
+    </section>
+
+    <div class="tabs">
+      <button class="tab-btn active" id="simulatorTabBtn" type="button">Simulator</button>
+      <button class="tab-btn" id="lessonTabBtn" type="button">Lesson Walkthrough</button>
+    </div>
+
+    <section class="tab-page active" id="simulatorPage">
+      <section class="grid">
+        <div>
+          <section class="panel road-panel">
+            <div class="panel-title">
+              <h2>Drive Through the Speed Trap</h2>
+              <span class="pill">Measured interval: Camera A → Camera B</span>
+            </div>
+            <p class="road-note">Start slow, speed up between the cameras, then slow down before Camera B. The average speed is calculated only between the two red camera traps.</p>
+
+            <div class="road-wrap">
+              <div class="road" id="road">
+                <div class="measured-zone"></div>
+                <div class="zone-label">Measured MVT Interval</div>
+                <div class="lane-line"></div>
+                <div class="camera camera-a"><div class="camera-label">Camera A</div></div>
+                <div class="camera camera-b"><div class="camera-label">Camera B</div></div>
+                <div class="car" id="car" aria-label="car driving right">
+                  <div class="car-cabin"></div><div class="car-body"></div><div class="car-nose"></div>
+                  <div class="wheel wheel-left"></div><div class="wheel wheel-right"></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="speed-box">
+              <div class="speed-top">
+                <div>
+                  <label for="speedSlider">Current Speed</label>
+                  <div class="mini-note">This stays active while driving.</div>
+                </div>
+                <div class="speed-readout"><span id="currentSpeed">5</span> <span>mph</span></div>
+              </div>
+              <input type="range" id="speedSlider" min="5" max="120" value="5" />
+            </div>
+
+            <div class="dash">
+              <div class="stat"><h3>Current Speed</h3><p><span id="dashCurrentSpeed">5</span> mph</p></div>
+              <div class="stat"><h3>Speed Limit</h3><p><span id="dashSpeedLimit">25</span> mph</p></div>
+              <div class="stat"><h3>Status</h3><p><span class="status-pill" id="statusPill">Ready</span></p></div>
+              <div class="stat"><h3>Measured Time</h3><p><span id="measuredTime">0.0000</span> hr</p></div>
+              <div class="stat"><h3>Measured Distance</h3><p><span id="measuredDistance">0.00</span> mi</p></div>
+              <div class="stat"><h3>Average Speed</h3><p><span id="averageSpeed">0.00</span> mph</p></div>
+            </div>
+
+            <div id="resultBox" class="result"></div>
+          </section>
+        </div>
+
+        <aside>
+          <section class="panel">
+            <div class="panel-title"><h2>Setup</h2><span class="pill">Fixed after start</span></div>
+            <div class="setup">
+              <div class="field"><label for="speedLimitInput">Speed Limit (mph)</label><input type="number" id="speedLimitInput" min="1" value="25" /></div>
+              <div class="field"><label for="distanceInput">Distance Between Cameras (miles)</label><input type="number" id="distanceInput" min="0.1" step="0.1" value="20" /></div>
+            </div>
+            <div class="button-row"><button class="start-btn" id="startBtn">Start Drive</button><button class="reset-btn" id="resetBtn">Reset</button></div>
+            <p class="mini-note">The setup values define the official camera interval. The speed slider is the only control you should change during the drive.</p>
+          </section>
+
+          <section class="panel">
+            <div class="panel-title"><h2>Try This Demo</h2></div>
+            <ul class="demo-list">
+              <li><strong>1.</strong> Start at a low speed before Camera A.</li>
+              <li><strong>2.</strong> Pass Camera A slowly.</li>
+              <li><strong>3.</strong> Increase the speed above the limit in the middle.</li>
+              <li><strong>4.</strong> Slow down before Camera B.</li>
+              <li><strong>5.</strong> Use the average speed and graphs to explain the MVT.</li>
+            </ul>
+          </section>
+        </aside>
+      </section>
+
+      <section class="dual-graphs">
+        <section class="panel graph-card">
+          <div class="panel-title">
+            <h2>Position vs. Time</h2>
+            <span class="pill">Shows s(t)</span>
+          </div>
+          <canvas id="positionGraph" width="980" height="390"></canvas>
+          <p class="graph-help">This graph shows the car’s position during the measured interval. After the run, the dashed blue secant line represents average speed, and the orange tangent lines mark all approximate MVT moments found in the run.</p>
+        </section>
+
+        <section class="panel graph-card">
+          <div class="panel-title">
+            <h2>Velocity vs. Time</h2>
+            <span class="pill">Shows s'(t)</span>
+          </div>
+          <canvas id="velocityGraph" width="980" height="390"></canvas>
+          <p class="graph-help">This graph shows the car’s instantaneous speed during the measured interval. The dashed horizontal line is the speed limit.</p>
+        </section>
+      </section>
+
+      <section class="panel calc-section">
+        <div class="panel-title"><h2>Calculus Connection: Mean Value Theorem</h2><span class="pill">Updates after your run</span></div>
+        <div class="calc-body">
+          <div class="formula-stack">
+            <div class="formula" id="averageFormula">Average speed = distance / time = waiting for a completed run...</div>
+            <div class="formula" id="mvtFormula">By the MVT, s'(c) = average speed = waiting for a completed run...</div>
+          </div>
+          <div class="explain" id="calculusExplanation">
+            Finish a drive to see the Mean Value Theorem using your exact values. The theorem applies to the measured interval from Camera A to Camera B because the car's position function <strong>s(t)</strong> is continuous and differentiable during the smooth drive.
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <section class="tab-page" id="lessonPage">
+      <div class="lesson-hero">
+        <div class="lesson-card">
+          <h2>Lesson Walkthrough</h2>
+          <p>This page turns the simulator into the actual lesson. The main idea is that the car’s average speed between two cameras is an <strong>average rate of change</strong>, while the speedometer shows an <strong>instantaneous rate of change</strong>.</p>
+          <p>The Mean Value Theorem connects those two ideas: if the car’s motion is smooth, then the car’s instantaneous speed must equal its average speed at least once during the measured interval.</p>
+        </div>
+
+        <div class="last-run-box">
+          <h2>Use My Last Run</h2>
+          <p id="lastRunIntro">Run the simulator first, then come back here to see your exact values inside the lesson.</p>
+          <div class="last-run-grid">
+            <div class="last-run-stat"><span>Distance</span><strong id="lessonDistance">—</strong></div>
+            <div class="last-run-stat"><span>Time</span><strong id="lessonTime">—</strong></div>
+            <div class="last-run-stat"><span>Average Speed</span><strong id="lessonAverage">—</strong></div>
+            <div class="last-run-stat"><span>Speed Limit</span><strong id="lessonLimit">—</strong></div>
+          </div>
+          <div class="lesson-formula" id="lessonLastRunFormula">Average speed = distance / time</div>
+        </div>
+      </div>
+
+      <div class="lesson-steps">
+        <div class="lesson-step">
+          <div class="step-number">1</div>
+          <div>
+            <h3>What does AROC mean?</h3>
+            <p><strong>Average Rate of Change</strong> measures how much something changes over an entire interval. In this project, the quantity is the car’s position, and the interval is from Camera A to Camera B.</p>
+            <div class="lesson-formula">AROC = change in position / change in time = distance between cameras / time between cameras</div>
+          </div>
+        </div>
+
+        <div class="lesson-step">
+          <div class="step-number">2</div>
+          <div>
+            <h3>What does IROC mean?</h3>
+            <p><strong>Instantaneous Rate of Change</strong> measures the rate at one exact moment. In this project, the instantaneous rate of change is the car’s exact speed at a specific time.</p>
+            <div class="lesson-formula">IROC = s'(t) = the speedometer reading at one exact moment</div>
+          </div>
+        </div>
+
+        <div class="lesson-step">
+          <div class="step-number">3</div>
+          <div>
+            <h3>What does the Mean Value Theorem say?</h3>
+            <p>If the car’s position function <strong>s(t)</strong> is continuous and differentiable from Camera A to Camera B, then there is at least one time <strong>c</strong> where the instantaneous speed equals the average speed.</p>
+            <div class="lesson-formula">s'(c) = [s(b) − s(a)] / [b − a]</div>
+            <p>On the simulator’s position-time graph, this is shown by orange tangent lines at the MVT moments having about the same slope as the secant line from Camera A to Camera B.</p>
+          </div>
+        </div>
+
+        <div class="lesson-step">
+          <div class="step-number">4</div>
+          <div>
+            <h3>How does the simulator show it?</h3>
+            <p>The simulator lets you pass both cameras slowly, speed up in the middle, and then slow down again. The cameras may not catch the car speeding at the exact camera points, but the average speed between the cameras can still prove speeding.</p>
+            <div class="evidence-boxes">
+              <div class="evidence-box camera-evidence">
+                <h3>Camera Evidence</h3>
+                <p>The car can be slow at Camera A and Camera B, so the cameras alone might not visually catch the speeding moment.</p>
+              </div>
+              <div class="evidence-box calc-evidence">
+                <h3>Calculus Evidence</h3>
+                <p>If the average speed is above the speed limit, MVT proves the car’s instantaneous speed was above the limit somewhere between the cameras.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="lesson-step">
+          <div class="step-number">5</div>
+          <div>
+            <h3>Check for Understanding</h3>
+            <p>In this project, which value represents the average rate of change?</p>
+            <div class="mini-quiz">
+              <button class="quiz-option" data-correct="false" type="button">The speed limit</button>
+              <button class="quiz-option" data-correct="true" type="button">Distance between cameras divided by time between cameras</button>
+              <button class="quiz-option" data-correct="false" type="button">The car’s speed at only Camera A</button>
+              <button class="quiz-option" data-correct="false" type="button">The highest speed reached during the whole drive</button>
+              <div class="quiz-feedback" id="quizFeedback"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const CAMERA_A = 0.15;
+    const CAMERA_B = 0.85;
+    const CAR_START = 0.05;
+    const CAR_END = 0.95;
+    const SIMULATION_MULTIPLIER = 260;
+
+    const car = document.getElementById("car");
+    const speedSlider = document.getElementById("speedSlider");
+    const currentSpeed = document.getElementById("currentSpeed");
+    const dashCurrentSpeed = document.getElementById("dashCurrentSpeed");
+    const dashSpeedLimit = document.getElementById("dashSpeedLimit");
+    const speedLimitInput = document.getElementById("speedLimitInput");
+    const distanceInput = document.getElementById("distanceInput");
+    const startBtn = document.getElementById("startBtn");
+    const resetBtn = document.getElementById("resetBtn");
+    const statusPill = document.getElementById("statusPill");
+    const measuredTimeEl = document.getElementById("measuredTime");
+    const measuredDistanceEl = document.getElementById("measuredDistance");
+    const averageSpeedEl = document.getElementById("averageSpeed");
+    const resultBox = document.getElementById("resultBox");
+    const averageFormula = document.getElementById("averageFormula");
+    const mvtFormula = document.getElementById("mvtFormula");
+    const calculusExplanation = document.getElementById("calculusExplanation");
+
+    const positionCanvas = document.getElementById("positionGraph");
+    const positionCtx = positionCanvas.getContext("2d");
+    const velocityCanvas = document.getElementById("velocityGraph");
+    const velocityCtx = velocityCanvas.getContext("2d");
+
+    const simulatorTabBtn = document.getElementById("simulatorTabBtn");
+    const lessonTabBtn = document.getElementById("lessonTabBtn");
+    const simulatorPage = document.getElementById("simulatorPage");
+    const lessonPage = document.getElementById("lessonPage");
+    const lessonDistance = document.getElementById("lessonDistance");
+    const lessonTime = document.getElementById("lessonTime");
+    const lessonAverage = document.getElementById("lessonAverage");
+    const lessonLimit = document.getElementById("lessonLimit");
+    const lessonLastRunFormula = document.getElementById("lessonLastRunFormula");
+    const lastRunIntro = document.getElementById("lastRunIntro");
+    const quizOptions = document.querySelectorAll(".quiz-option");
+    const quizFeedback = document.getElementById("quizFeedback");
+
+    let running = false;
+    let finished = false;
+    let lastTimestamp = null;
+    let animationId = null;
+    let lockedSpeedLimit = 25;
+    let lockedCameraDistance = 20;
+    let visualDistance = 0;
+    let totalVisualDistance = 0;
+    let preCameraDistance = 0;
+    let postCameraDistance = 0;
+    let measuredDistance = 0;
+    let measuredElapsedTime = 0;
+    let measurementStarted = false;
+    let measurementFinished = false;
+    let velocityPoints = [];
+    let positionPoints = [];
+    let lastRun = null;
+
+    function currentSliderSpeed() { return Number(speedSlider.value); }
+
+    function setStatus(text, className = "") {
+      statusPill.textContent = text;
+      statusPill.className = "status-pill" + (className ? ` ${className}` : "");
+    }
+
+    function updateSpeedDisplays() {
+      const speed = currentSliderSpeed();
+      currentSpeed.textContent = speed;
+      dashCurrentSpeed.textContent = speed;
+    }
+
+    function lockSetup() {
+      lockedSpeedLimit = Number(speedLimitInput.value);
+      lockedCameraDistance = Number(distanceInput.value);
+      if (!Number.isFinite(lockedSpeedLimit) || lockedSpeedLimit <= 0) { lockedSpeedLimit = 25; speedLimitInput.value = 25; }
+      if (!Number.isFinite(lockedCameraDistance) || lockedCameraDistance <= 0) { lockedCameraDistance = 20; distanceInput.value = 20; }
+      dashSpeedLimit.textContent = lockedSpeedLimit;
+      preCameraDistance = lockedCameraDistance * ((CAMERA_A - CAR_START) / (CAMERA_B - CAMERA_A));
+      postCameraDistance = lockedCameraDistance * ((CAR_END - CAMERA_B) / (CAMERA_B - CAMERA_A));
+      totalVisualDistance = preCameraDistance + lockedCameraDistance + postCameraDistance;
+    }
+
+    function startDrive() {
+      if (running) return;
+      resetStateOnly(false);
+      lockSetup();
+      running = true;
+      finished = false;
+      lastTimestamp = null;
+      startBtn.disabled = true;
+      speedLimitInput.disabled = true;
+      distanceInput.disabled = true;
+      setStatus("Before Camera A");
+      animationId = requestAnimationFrame(tick);
+    }
+
+    function tick(timestamp) {
+      if (!running) return;
+      if (lastTimestamp === null) lastTimestamp = timestamp;
+      const realDeltaSeconds = (timestamp - lastTimestamp) / 1000;
+      lastTimestamp = timestamp;
+
+      // Convert real seconds to simulated hours so mph, miles, and hours stay consistent.
+      const simulatedHours = (realDeltaSeconds * SIMULATION_MULTIPLIER) / 3600;
+      const speed = currentSliderSpeed();
+      const addedDistance = speed * simulatedHours;
+
+      visualDistance += addedDistance;
+      handleMeasuredInterval(addedDistance, simulatedHours, speed);
+
+      if (visualDistance >= totalVisualDistance) {
+        visualDistance = totalVisualDistance;
+        running = false;
+        finished = true;
+        startBtn.disabled = false;
+        setStatus("Finished", "finished");
+        cancelAnimationFrame(animationId);
+      }
+
+      updateDashboard();
+      drawAllGraphs();
+      if (running) animationId = requestAnimationFrame(tick);
+    }
+
+    function handleMeasuredInterval(addedDistance, simulatedHours, speed) {
+      const cameraAVisualDistance = preCameraDistance;
+      const cameraBVisualDistance = preCameraDistance + lockedCameraDistance;
+      const previousVisualDistance = visualDistance - addedDistance;
+
+      if (!measurementStarted && visualDistance >= cameraAVisualDistance) {
+        measurementStarted = true;
+        setStatus("Measuring", "measuring");
+      }
+
+      if (measurementStarted && !measurementFinished) {
+        const segmentStart = Math.max(previousVisualDistance, cameraAVisualDistance);
+        const segmentEnd = Math.min(visualDistance, cameraBVisualDistance);
+        const measuredAddedDistance = Math.max(0, segmentEnd - segmentStart);
+
+        if (measuredAddedDistance > 0 && speed > 0 && addedDistance > 0) {
+          const fractionInside = measuredAddedDistance / addedDistance;
+          const measuredAddedTime = simulatedHours * fractionInside;
+
+          measuredDistance += measuredAddedDistance;
+          measuredElapsedTime += measuredAddedTime;
+
+          velocityPoints.push({ time: measuredElapsedTime, speed });
+          positionPoints.push({ time: measuredElapsedTime, distance: measuredDistance });
+        }
+      }
+
+      if (!measurementFinished && visualDistance >= cameraBVisualDistance) {
+        measurementFinished = true;
+        measuredDistance = lockedCameraDistance;
+
+        if (positionPoints.length > 0) {
+          positionPoints[positionPoints.length - 1].distance = lockedCameraDistance;
+        }
+
+        setStatus("Past Camera B", "past");
+        showResult();
+        updateCalculusSection();
+      }
+    }
+
+    function visualProgress() {
+      if (totalVisualDistance <= 0) return CAR_START;
+      return CAR_START + (visualDistance / totalVisualDistance) * (CAR_END - CAR_START);
+    }
+
+    function averageSpeed() { return measuredElapsedTime > 0 ? measuredDistance / measuredElapsedTime : 0; }
+
+    function updateDashboard() {
+      updateSpeedDisplays();
+      car.style.left = `${visualProgress() * 100}%`;
+      measuredTimeEl.textContent = measuredElapsedTime.toFixed(4);
+      measuredDistanceEl.textContent = measuredDistance.toFixed(2);
+      averageSpeedEl.textContent = averageSpeed().toFixed(2);
+    }
+
+    function showResult() {
+      const avg = averageSpeed();
+      const aboveLimit = avg > lockedSpeedLimit;
+      resultBox.className = "result " + (aboveLimit ? "speeding" : "legal");
+      resultBox.innerHTML = aboveLimit
+        ? `<h3>Speeding proven by the Mean Value Theorem.</h3><p>Your average speed between Camera A and Camera B was <strong>${avg.toFixed(2)} mph</strong>, which is above the speed limit of <strong>${lockedSpeedLimit} mph</strong>. Since the car's position was continuous and smooth, the Mean Value Theorem says there must have been at least one moment between the cameras where the car's instantaneous speed equaled its average speed. Therefore, the car must have been speeding at some point.</p>`
+        : `<h3>No speeding proven.</h3><p>Your average speed between Camera A and Camera B was <strong>${avg.toFixed(2)} mph</strong>, which is not above the speed limit of <strong>${lockedSpeedLimit} mph</strong>. The Mean Value Theorem still says there was at least one moment where the instantaneous speed equaled the average speed, but this does not prove that the car exceeded the speed limit.</p>`;
+    }
+
+    function updateLessonLastRun() {
+      if (!lastRun) {
+        lessonDistance.textContent = "—";
+        lessonTime.textContent = "—";
+        lessonAverage.textContent = "—";
+        lessonLimit.textContent = "—";
+        lessonLastRunFormula.textContent = "Average speed = distance / time";
+        lastRunIntro.textContent = "Run the simulator first, then come back here to see your exact values inside the lesson.";
+        return;
+      }
+
+      lessonDistance.textContent = `${lastRun.distance.toFixed(2)} mi`;
+      lessonTime.textContent = `${lastRun.time.toFixed(4)} hr`;
+      lessonAverage.textContent = `${lastRun.average.toFixed(2)} mph`;
+      lessonLimit.textContent = `${lastRun.limit.toFixed(0)} mph`;
+      lastRunIntro.textContent = lastRun.average > lastRun.limit
+        ? "Your last run is a strong example: the average speed proves speeding by the MVT."
+        : "Your last run shows the MVT, but it does not prove speeding because the average speed was not above the limit.";
+      lessonLastRunFormula.innerHTML = `Average speed = ${lastRun.distance.toFixed(2)} miles / ${lastRun.time.toFixed(4)} hours = <strong>${lastRun.average.toFixed(2)} mph</strong><br>s'(c) = ${lastRun.average.toFixed(2)} mph for at least one moment between the cameras.`;
+    }
+
+    function updateCalculusSection() {
+      const avg = averageSpeed();
+      lastRun = { distance: lockedCameraDistance, time: measuredElapsedTime, average: avg, limit: lockedSpeedLimit };
+      updateLessonLastRun();
+      averageFormula.innerHTML = `Average speed = distance / time<br>Average speed = ${lockedCameraDistance.toFixed(2)} miles / ${measuredElapsedTime.toFixed(4)} hours<br>Average speed = <strong>${avg.toFixed(2)} mph</strong>`;
+      mvtFormula.innerHTML = `By the Mean Value Theorem, there must be some time <em>c</em> between Camera A and Camera B where:<br><strong>s'(c) = ${avg.toFixed(2)} mph</strong>`;
+      const conclusion = avg > lockedSpeedLimit
+        ? `Since <strong>${avg.toFixed(2)} mph</strong> is greater than the speed limit of <strong>${lockedSpeedLimit} mph</strong>, the MVT proves that the car was speeding at least once between the cameras.`
+        : `Since <strong>${avg.toFixed(2)} mph</strong> is not greater than the speed limit of <strong>${lockedSpeedLimit} mph</strong>, the MVT does not prove that the car was speeding.`;
+      calculusExplanation.innerHTML = `Distance divided by time is the <strong>average rate of change</strong> of the car's position function <strong>s(t)</strong>. The speed at one exact moment is the <strong>instantaneous rate of change</strong>, or <strong>s'(t)</strong>. Because the car's position is continuous and differentiable during the smooth drive, the Mean Value Theorem applies to the interval from Camera A to Camera B. This means that at some exact moment during the measured interval, the car's instantaneous speed had to equal <strong>${avg.toFixed(2)} mph</strong>. ${conclusion}`;
+    }
+
+    function resetStateOnly(clearLastRun = false) {
+      running = false;
+      finished = false;
+      cancelAnimationFrame(animationId);
+      lastTimestamp = null;
+      visualDistance = 0;
+      totalVisualDistance = 0;
+      preCameraDistance = 0;
+      postCameraDistance = 0;
+      measuredDistance = 0;
+      measuredElapsedTime = 0;
+      measurementStarted = false;
+      measurementFinished = false;
+      velocityPoints = [];
+      positionPoints = [];
+      if (clearLastRun) lastRun = null;
+      car.style.left = `${CAR_START * 100}%`;
+      measuredTimeEl.textContent = "0.0000";
+      measuredDistanceEl.textContent = "0.00";
+      averageSpeedEl.textContent = "0.00";
+      resultBox.className = "result";
+      resultBox.innerHTML = "";
+      averageFormula.textContent = "Average speed = distance / time = waiting for a completed run...";
+      mvtFormula.textContent = "By the MVT, s'(c) = average speed = waiting for a completed run...";
+      calculusExplanation.innerHTML = `Finish a drive to see the Mean Value Theorem using your exact values. The theorem applies to the measured interval from Camera A to Camera B because the car's position function <strong>s(t)</strong> is continuous and differentiable during the smooth drive.`;
+      drawAllGraphs();
+      updateLessonLastRun();
+    }
+
+    function resetEverything() {
+      resetStateOnly(false);
+      startBtn.disabled = false;
+      speedLimitInput.disabled = false;
+      distanceInput.disabled = false;
+      lockedSpeedLimit = Number(speedLimitInput.value) || 25;
+      dashSpeedLimit.textContent = lockedSpeedLimit;
+      setStatus("Ready");
+      updateSpeedDisplays();
+      drawAllGraphs();
+    }
+
+    function graphScales(canvas, points, yMaxInput) {
+      const width = canvas.width;
+      const height = canvas.height;
+      const padLeft = 64;
+      const padRight = 26;
+      const padTop = 24;
+      const padBottom = 56;
+      const plotW = width - padLeft - padRight;
+      const plotH = height - padTop - padBottom;
+      const lastTime = points.at(-1)?.time || measuredElapsedTime || 0.001;
+      const xMax = Math.max(0.001, lastTime);
+      const yMax = Math.max(0.001, yMaxInput);
+      const x = (time) => padLeft + (time / xMax) * plotW;
+      const y = (value) => padTop + plotH - (value / yMax) * plotH;
+      return { width, height, padLeft, padRight, padTop, padBottom, plotW, plotH, xMax, yMax, x, y };
+    }
+
+    function drawAxes(ctx, scales, yLabels, xLabel, yLabel) {
+      const { width, height, padLeft, padRight, padTop, padBottom, plotW, plotH, xMax, yMax, x, y } = scales;
+
+      ctx.strokeStyle = "#e2e8f0";
+      ctx.lineWidth = 1;
+      ctx.fillStyle = "#64748b";
+      ctx.font = "13px Inter, Arial, sans-serif";
+      ctx.textAlign = "right";
+      ctx.textBaseline = "middle";
+
+      for (let i = 0; i <= 4; i++) {
+        const value = (yMax / 4) * i;
+        const yy = y(value);
+        ctx.beginPath(); ctx.moveTo(padLeft, yy); ctx.lineTo(width - padRight, yy); ctx.stroke();
+        ctx.fillText(yLabels(value), padLeft - 10, yy);
+      }
+
+      ctx.textAlign = "center";
+      ctx.textBaseline = "top";
+      for (let i = 0; i <= 4; i++) {
+        const time = (xMax / 4) * i;
+        const xx = x(time);
+        ctx.beginPath(); ctx.moveTo(xx, padTop); ctx.lineTo(xx, height - padBottom); ctx.stroke();
+        ctx.fillText(time.toFixed(4), xx, height - padBottom + 12);
+      }
+
+      ctx.strokeStyle = "#0f172a";
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(padLeft, padTop); ctx.lineTo(padLeft, height - padBottom); ctx.lineTo(width - padRight, height - padBottom); ctx.stroke();
+
+      ctx.fillStyle = "#334155";
+      ctx.font = "bold 14px Inter, Arial, sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "bottom";
+      ctx.fillText(xLabel, padLeft + plotW / 2, height - 10);
+
+      ctx.save();
+      ctx.translate(18, padTop + plotH / 2);
+      ctx.rotate(-Math.PI / 2);
+      ctx.textAlign = "center";
+      ctx.fillText(yLabel, 0, 0);
+      ctx.restore();
+    }
+
+    function drawEmptyGraph(ctx, scales, message) {
+      ctx.fillStyle = "#94a3b8";
+      ctx.font = "bold 17px Inter, Arial, sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(message, scales.padLeft + scales.plotW / 2, scales.padTop + scales.plotH / 2);
+    }
+
+    function drawAllGraphs() {
+      drawPositionGraph();
+      drawVelocityGraph();
+    }
+
+    function findAllMvtMoments() {
+      if (!measurementFinished || velocityPoints.length < 2 || positionPoints.length < 2) {
+        return [];
+      }
+
+      const avg = averageSpeed();
+      const tolerance = 0.12;
+      const moments = [];
+
+      function addMoment(time, distance, speed) {
+        const duplicate = moments.some((moment) => Math.abs(moment.time - time) < 0.00005);
+        if (!duplicate) {
+          moments.push({
+            time,
+            distance,
+            speed,
+            average: avg
+          });
+        }
+      }
+
+      for (let i = 0; i < velocityPoints.length - 1; i++) {
+        const v1 = velocityPoints[i];
+        const v2 = velocityPoints[i + 1];
+        const p1 = positionPoints[i];
+        const p2 = positionPoints[i + 1];
+
+        const d1 = v1.speed - avg;
+        const d2 = v2.speed - avg;
+
+        // A sampled point is already very close to the average speed.
+        if (Math.abs(d1) <= tolerance) {
+          addMoment(v1.time, p1.distance, v1.speed);
+        }
+
+        // The speed crosses the average speed between two sampled points.
+        if ((d1 < 0 && d2 > 0) || (d1 > 0 && d2 < 0)) {
+          const ratio = (avg - v1.speed) / (v2.speed - v1.speed);
+          const time = v1.time + ratio * (v2.time - v1.time);
+          const distance = p1.distance + ratio * (p2.distance - p1.distance);
+          addMoment(time, distance, avg);
+        }
+
+        // A flat segment is sitting right around the average speed.
+        if (Math.abs(d1) <= tolerance && Math.abs(d2) <= tolerance) {
+          addMoment(v2.time, p2.distance, v2.speed);
+        }
+      }
+
+      const lastVelocityPoint = velocityPoints[velocityPoints.length - 1];
+      const lastPositionPoint = positionPoints[positionPoints.length - 1];
+      if (Math.abs(lastVelocityPoint.speed - avg) <= tolerance) {
+        addMoment(lastVelocityPoint.time, lastPositionPoint.distance, lastVelocityPoint.speed);
+      }
+
+      return moments;
+    }
+
+    function drawPositionGraph() {
+      const yMax = Math.max(lockedCameraDistance, positionPoints.at(-1)?.distance || 0.001);
+      const scales = graphScales(positionCanvas, positionPoints, yMax);
+      const { width, height, padLeft, padRight, padTop, xMax, x, y } = scales;
+
+      positionCtx.clearRect(0, 0, width, height);
+      positionCtx.fillStyle = "#ffffff";
+      positionCtx.fillRect(0, 0, width, height);
+
+      drawAxes(
+        positionCtx,
+        scales,
+        (value) => value.toFixed(2),
+        "Measured Time (hours)",
+        "Position / Distance (miles)"
+      );
+
+      if (positionPoints.length > 1) {
+        positionCtx.strokeStyle = "#16a34a";
+        positionCtx.lineWidth = 4;
+        positionCtx.lineJoin = "round";
+        positionCtx.lineCap = "round";
+        positionCtx.beginPath();
+        positionPoints.forEach((point, index) => {
+          const xx = x(point.time), yy = y(point.distance);
+          if (index === 0) positionCtx.moveTo(xx, yy);
+          else positionCtx.lineTo(xx, yy);
+        });
+        positionCtx.stroke();
+
+        const first = positionPoints[0];
+        const last = positionPoints[positionPoints.length - 1];
+
+        positionCtx.fillStyle = "#16a34a";
+        positionCtx.beginPath(); positionCtx.arc(x(first.time), y(first.distance), 4.6, 0, Math.PI * 2); positionCtx.fill();
+        positionCtx.beginPath(); positionCtx.arc(x(last.time), y(last.distance), 4.6, 0, Math.PI * 2); positionCtx.fill();
+
+        if (measurementFinished && positionPoints.length >= 2) {
+          const avg = averageSpeed();
+
+          positionCtx.save();
+          positionCtx.setLineDash([10, 8]);
+          positionCtx.strokeStyle = "#2563eb";
+          positionCtx.lineWidth = 3;
+          positionCtx.beginPath();
+          positionCtx.moveTo(x(first.time), y(first.distance));
+          positionCtx.lineTo(x(last.time), y(last.distance));
+          positionCtx.stroke();
+          positionCtx.restore();
+
+          positionCtx.fillStyle = "#2563eb";
+          positionCtx.font = "bold 14px Inter, Arial, sans-serif";
+          positionCtx.textAlign = "left";
+          positionCtx.textBaseline = "bottom";
+          positionCtx.fillText(`Secant slope = avg speed = ${avg.toFixed(2)} mph`, padLeft + 10, padTop + 20);
+
+          const mvtMoments = findAllMvtMoments();
+
+          mvtMoments.forEach((moment) => {
+            const tangentWindow = Math.max(xMax * 0.12, 0.0001);
+            const tangentStartTime = Math.max(0, moment.time - tangentWindow / 2);
+            const tangentEndTime = Math.min(xMax, moment.time + tangentWindow / 2);
+            const tangentStartDistance = moment.distance + avg * (tangentStartTime - moment.time);
+            const tangentEndDistance = moment.distance + avg * (tangentEndTime - moment.time);
+
+            positionCtx.strokeStyle = "#f97316";
+            positionCtx.lineWidth = 3.5;
+            positionCtx.lineCap = "round";
+            positionCtx.beginPath();
+            positionCtx.moveTo(x(tangentStartTime), y(tangentStartDistance));
+            positionCtx.lineTo(x(tangentEndTime), y(tangentEndDistance));
+            positionCtx.stroke();
+
+            positionCtx.fillStyle = "#f97316";
+            positionCtx.beginPath();
+            positionCtx.arc(x(moment.time), y(moment.distance), 5.5, 0, Math.PI * 2);
+            positionCtx.fill();
+          });
+
+          if (mvtMoments.length > 0) {
+            const boxX = Math.max(padLeft + 10, width - padRight - 245);
+            const boxY = padTop + 32;
+
+            positionCtx.fillStyle = "rgba(255, 247, 237, 0.96)";
+            positionCtx.strokeStyle = "#fed7aa";
+            positionCtx.lineWidth = 1;
+            positionCtx.beginPath();
+            positionCtx.roundRect(boxX, boxY, 235, 54, 12);
+            positionCtx.fill();
+            positionCtx.stroke();
+
+            positionCtx.fillStyle = "#9a3412";
+            positionCtx.font = "bold 13px Inter, Arial, sans-serif";
+            positionCtx.textAlign = "left";
+            positionCtx.textBaseline = "top";
+            positionCtx.fillText(`Approx. MVT moments found: ${mvtMoments.length}`, boxX + 12, boxY + 10);
+
+            positionCtx.font = "12px Inter, Arial, sans-serif";
+            positionCtx.fillText("Each orange tangent has the secant slope.", boxX + 12, boxY + 29);
+          }
+        }
+      } else {
+        drawEmptyGraph(positionCtx, scales, "Graph starts when the car crosses Camera A");
+      }
+    }
+
+    function drawVelocityGraph() {
+      const maxSpeedReached = velocityPoints.reduce((max, p) => Math.max(max, p.speed), 0);
+      const yMax = Math.max(120, lockedSpeedLimit + 15, maxSpeedReached + 15);
+      const scales = graphScales(velocityCanvas, velocityPoints, yMax);
+      const { width, height, padLeft, padRight, padTop, x, y } = scales;
+      const limitY = y(lockedSpeedLimit);
+
+      velocityCtx.clearRect(0, 0, width, height);
+      velocityCtx.fillStyle = "#ffffff";
+      velocityCtx.fillRect(0, 0, width, height);
+
+      velocityCtx.fillStyle = "rgba(220, 38, 38, 0.06)";
+      velocityCtx.fillRect(padLeft, padTop, scales.plotW, Math.max(0, limitY - padTop));
+
+      drawAxes(
+        velocityCtx,
+        scales,
+        (value) => value.toFixed(0),
+        "Measured Time (hours)",
+        "Velocity / Speed (mph)"
+      );
+
+      velocityCtx.save();
+      velocityCtx.setLineDash([9, 7]);
+      velocityCtx.strokeStyle = "#dc2626";
+      velocityCtx.lineWidth = 2;
+      velocityCtx.beginPath(); velocityCtx.moveTo(padLeft, limitY); velocityCtx.lineTo(width - padRight, limitY); velocityCtx.stroke();
+      velocityCtx.restore();
+
+      velocityCtx.fillStyle = "#dc2626";
+      velocityCtx.font = "bold 14px Inter, Arial, sans-serif";
+      velocityCtx.textAlign = "left";
+      velocityCtx.textBaseline = "bottom";
+      velocityCtx.fillText(`Speed Limit: ${lockedSpeedLimit} mph`, padLeft + 10, limitY - 6);
+
+      if (velocityPoints.length > 1) {
+        velocityCtx.strokeStyle = "#2563eb";
+        velocityCtx.lineWidth = 4;
+        velocityCtx.lineJoin = "round";
+        velocityCtx.lineCap = "round";
+        velocityCtx.beginPath();
+        velocityPoints.forEach((point, index) => {
+          const xx = x(point.time), yy = y(point.speed);
+          if (index === 0) velocityCtx.moveTo(xx, yy);
+          else velocityCtx.lineTo(xx, yy);
+        });
+        velocityCtx.stroke();
+
+        velocityPoints.forEach((point) => {
+          if (point.speed > lockedSpeedLimit) {
+            velocityCtx.fillStyle = "#dc2626";
+            velocityCtx.beginPath(); velocityCtx.arc(x(point.time), y(point.speed), 4.2, 0, Math.PI * 2); velocityCtx.fill();
+          }
+        });
+      } else {
+        drawEmptyGraph(velocityCtx, scales, "Graph starts when the car crosses Camera A");
+      }
+    }
+
+    function switchTab(tabName) {
+      const showLesson = tabName === "lesson";
+      simulatorTabBtn.classList.toggle("active", !showLesson);
+      lessonTabBtn.classList.toggle("active", showLesson);
+      simulatorPage.classList.toggle("active", !showLesson);
+      lessonPage.classList.toggle("active", showLesson);
+      if (!showLesson) drawAllGraphs();
+    }
+
+    simulatorTabBtn.addEventListener("click", () => switchTab("simulator"));
+    lessonTabBtn.addEventListener("click", () => switchTab("lesson"));
+
+    quizOptions.forEach((option) => {
+      option.addEventListener("click", () => {
+        quizOptions.forEach((btn) => btn.classList.remove("correct", "wrong"));
+        const isCorrect = option.dataset.correct === "true";
+        option.classList.add(isCorrect ? "correct" : "wrong");
+        quizFeedback.classList.add("show");
+        quizFeedback.innerHTML = isCorrect
+          ? "Correct. AROC is the average speed over the whole camera interval: distance divided by time."
+          : "Not quite. That choice is not the average over the whole interval. In this project, AROC is the distance between Camera A and Camera B divided by the time it took to travel between them.";
+      });
+    });
+
+    speedSlider.addEventListener("input", updateSpeedDisplays);
+    speedLimitInput.addEventListener("input", () => {
+      if (!running) {
+        lockedSpeedLimit = Number(speedLimitInput.value) || 55;
+        dashSpeedLimit.textContent = lockedSpeedLimit;
+        drawAllGraphs();
+      }
+    });
+    startBtn.addEventListener("click", startDrive);
+    resetBtn.addEventListener("click", resetEverything);
+    resetEverything();
+  </script>
+</body>
+</html>
