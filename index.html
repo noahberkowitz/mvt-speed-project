@@ -375,7 +375,7 @@
             <span class="pill">Shows s'(t)</span>
           </div>
           <canvas id="velocityGraph" width="980" height="390"></canvas>
-          <p class="graph-help">This graph shows the car’s instantaneous speed during the measured interval. The dashed horizontal line is the speed limit.</p>
+          <p class="graph-help">This is a graph that shows the car's velocity, or instantaneous speed, in between the cameras. The red line represents your speed limit.</p>
         </section>
       </section>
 
@@ -387,7 +387,7 @@
             <div class="formula" id="mvtFormula">By the MVT, s'(c) = average speed = waiting for a completed run...</div>
           </div>
           <div class="explain" id="calculusExplanation">
-            Finish a drive to see the Mean Value Theorem using your exact values. The theorem applies to the measured interval from Camera A to Camera B because the car's position function <strong>s(t)</strong> is continuous and differentiable during the smooth drive.
+            Complete a drive through the cameras to see the Mean Value Theorum work with your trial's values. Note that this only works because the graph representing the car's position, <strong>s(t)</strong> is continuous and differentiable during your drive.
           </div>
         </div>
       </section>
@@ -699,9 +699,9 @@
       averageFormula.innerHTML = `Average speed = distance / time<br>Average speed = ${lockedCameraDistance.toFixed(2)} miles / ${measuredElapsedTime.toFixed(4)} hours<br>Average speed = <strong>${avg.toFixed(2)} mph</strong>`;
       mvtFormula.innerHTML = `By the Mean Value Theorem, there must be some time <em>c</em> between Camera A and Camera B where:<br><strong>s'(c) = ${avg.toFixed(2)} mph</strong>`;
       const conclusion = avg > lockedSpeedLimit
-        ? `Since <strong>${avg.toFixed(2)} mph</strong> is greater than the speed limit of <strong>${lockedSpeedLimit} mph</strong>, the MVT proves that the car was speeding at least once between the cameras.`
-        : `Since <strong>${avg.toFixed(2)} mph</strong> is not greater than the speed limit of <strong>${lockedSpeedLimit} mph</strong>, the MVT does not prove that the car was speeding.`;
-      calculusExplanation.innerHTML = `Distance divided by time is the <strong>average rate of change</strong> of the car's position function <strong>s(t)</strong>. The speed at one exact moment is the <strong>instantaneous rate of change</strong>, or <strong>s'(t)</strong>. Because the car's position is continuous and differentiable during the smooth drive, the Mean Value Theorem applies to the interval from Camera A to Camera B. This means that at some exact moment during the measured interval, the car's instantaneous speed had to equal <strong>${avg.toFixed(2)} mph</strong>. ${conclusion}`;
+        ? `Since <strong>${avg.toFixed(2)} mph</strong> is greater than the speed limit of <strong>${lockedSpeedLimit} mph</strong>, the MVT proves that the car was speeding between the cameras.`
+        : `Since <strong>${avg.toFixed(2)} mph</strong> is not greater than the speed limit of <strong>${lockedSpeedLimit} mph</strong>, the MVT does not prove that the car was speeding between the cameras.`;
+      calculusExplanation.innerHTML = `Distance divided by time is the <strong>average rate of change</strong> of the car's position function <strong>s(t)</strong>. The speed at one exact moment is the <strong>instantaneous rate of change</strong>, or <strong>s'(t)</strong>. Because the car's position graph is continuous and differentiable during the smooth drive, the Mean Value Theorem applies to the interval from Camera A to Camera B. This means that at some exact moment during the measured interval, the car's instantaneous speed had to equal <strong>${avg.toFixed(2)} mph</strong>. ${conclusion}`;
     }
 
     function resetStateOnly(clearLastRun = false) {
