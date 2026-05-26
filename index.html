@@ -397,8 +397,8 @@
       <div class="lesson-hero">
         <div class="lesson-card">
           <h2>Lesson Walkthrough</h2>
-          <p>This page turns the simulator into the actual lesson. The main idea is that the car’s average speed between two cameras is an <strong>average rate of change</strong>, while the speedometer shows an <strong>instantaneous rate of change</strong>.</p>
-          <p>The Mean Value Theorem connects those two ideas: if the car’s motion is smooth, then the car’s instantaneous speed must equal its average speed at least once during the measured interval.</p>
+          <p>The main idea of this lesson is that the car’s average speed between two cameras is the <strong>average rate of change</strong>, while the speedometer shows the <strong>instantaneous rate of change</strong>.</p>
+          <p>This is what the Mean Value Theorum shows: since the graph of the car's motion is smooth, or <strong>continuous</strong>, then the car’s instantaneous speed must equal its average speed at least once during the measured interval.</p>
         </div>
 
         <div class="last-run-box">
@@ -419,7 +419,7 @@
           <div class="step-number">1</div>
           <div>
             <h3>What does AROC mean?</h3>
-            <p><strong>Average Rate of Change</strong> measures how much something changes over an entire interval. In this project, the quantity is the car’s position, and the interval is from Camera A to Camera B.</p>
+            <p><strong>Average Rate of Change</strong> measures how much something changes over an entire interval. In this case, the car’s position is what is changing, and the interval is from Camera A to Camera B.</p>
             <div class="lesson-formula">AROC = change in position / change in time = distance between cameras / time between cameras</div>
           </div>
         </div>
@@ -428,7 +428,7 @@
           <div class="step-number">2</div>
           <div>
             <h3>What does IROC mean?</h3>
-            <p><strong>Instantaneous Rate of Change</strong> measures the rate at one exact moment. In this project, the instantaneous rate of change is the car’s exact speed at a specific time.</p>
+            <p><strong>Instantaneous Rate of Change</strong> measures the rate of change at one exact moment. In this project, the instantaneous rate of change is the car’s exact speed at a specific time.</p>
             <div class="lesson-formula">IROC = s'(t) = the speedometer reading at one exact moment</div>
           </div>
         </div>
@@ -437,9 +437,9 @@
           <div class="step-number">3</div>
           <div>
             <h3>What does the Mean Value Theorem say?</h3>
-            <p>If the car’s position function <strong>s(t)</strong> is continuous and differentiable from Camera A to Camera B, then there is at least one time <strong>c</strong> where the instantaneous speed equals the average speed.</p>
+            <p>If the car’s position function <strong>s(t)</strong> is continuous and differentiable from Camera A to Camera B, then there is at least one time, <strong>c</strong>, where the instantaneous rate of change equals the average rate of change</p>
             <div class="lesson-formula">s'(c) = [s(b) − s(a)] / [b − a]</div>
-            <p>On the simulator’s position-time graph, this is shown by orange tangent lines at the MVT moments having about the same slope as the secant line from Camera A to Camera B.</p>
+            <p>On the car’s position vs. time graph, this is shown by orange tangent lines at the MVT moments having the same slope as the secant line from Camera A to Camera B.</p>
           </div>
         </div>
 
